@@ -70,25 +70,26 @@ void Shader::Delete()
 
 void Shader::compileErrors(unsigned int shader, const char* type)
 {
+	// Stores status of compilation
 	GLint hasCompiled;
+	// Character array to store error message in
 	char infoLog[1024];
-
 	if(std::string(type) != "PROGRAM")
 	{
 		glGetShaderiv(shader, GL_COMPILE_STATUS, &hasCompiled);
 		if(hasCompiled == GL_FALSE)
 		{
 			glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-			std::cout << "SHADER_COMPILATION_ERROR for: " << type << "\n" << std::endl;
+			std::cout << "SHADER_COMPILATION_ERROR for:" << type << "\n" << infoLog << std::endl;
 		}
 	}
 	else
 	{
-		glGetProgramiv(shader, GL_COMPILE_STATUS, &hasCompiled);
+		glGetProgramiv(shader, GL_LINK_STATUS, &hasCompiled);
 		if(hasCompiled == GL_FALSE)
 		{
 			glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-			std::cout << "SHADER_LINKING_ERROR for: " << type << "\n" << std::endl;
+			std::cout << "SHADER_LINKING_ERROR for:" << type << "\n" << infoLog << std::endl;
 		}
 	}
 }
