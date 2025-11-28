@@ -1,22 +1,28 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <math.h>
 
-// Vertex Shader source code
-const char* vertexShaderSource = "#version 330 core\n"
-								 "layout (location = 0) in vec3 aPos;\n"
-								 "void main()\n"
-								 "{\n"
-								 "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-								 "}\0";
+#include "shaderClass.h"
+#include "VAO.h"
+#include "VBO.h"
+#include "EBO.h"
 
-// Fragment Shader source code
-const char* fragmentShaderSource = "#version 330 core\n"
-								   "out vec4 FragColor;\n"
-								   "void main()\n"
-								   "{\n"
-								   "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-								   "}\n\0";
+// Vertices coordinates
+float vertices[] = {
+	-0.5f,	   -0.5f * float(sqrt(3)) / 3,	  0.0f, // lower left
+	0.5f,	   -0.5f * float(sqrt(3)) / 3,	  0.0f, // lower right
+	0.0f,	   0.5f * float(sqrt(3)) * 2 / 3, 0.0f, // upper
+	-0.5f / 2, 0.5f * float(sqrt(3)) / 6,	  0.0f, // inner left
+	0.5f / 2,  0.5f * float(sqrt(3)) / 6,	  0.0f, // inner right
+	0.0f,	   -0.5f * float(sqrt(3)) / 3,	  0.0f, // inner down
+};
+
+unsigned int indices[] = {
+	5, 3, 0, // lower left triangle
+	4, 2, 3, // lower right triangle
+	1, 4, 5, // upper triangle
+};
 
 int main()
 {
@@ -29,15 +35,8 @@ int main()
 	// Tell OpenGL we are using CORE profile for modern functions
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	// Vertices coordinates
-	float vertices[] = {
-		-0.5f, -0.5f, 0.0f, // bottom left
-		0.5f,  -0.5f, 0.0f, // bottom right
-		0.0f,  0.5f,  0.0f, // top middle
-	};
-
 	// Create a GLFWwindow object
-	GLFWwindow* window = glfwCreateWindow(800, 800, "Opengl", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(800, 800, "OpenGL", NULL, NULL);
 	// Error check if the window fails to creade
 	if(window == NULL)
 	{
@@ -55,87 +54,49 @@ int main()
 	// Specify the viewport of OpenGL in the window
 	glViewport(0, 0, 800, 800);
 
-	// Crate Vertex Shader Object and get its reference
-	unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	// Attach Vertex Shader source to the Vertex Shader Object
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	// Complie the Vertex Shader init machine code
-	glCompileShader(vertexShader);
+	// Generates Shader object using shaders defualt.vert and default.frag
+	Shader shaderProgram("src/shaders/default.vert", "src/shaders/default.frag");
 
-	// Crate Fragment Shader Object and get its reference
-	unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	// Attach Fragment Shader source to the Fragment Shader Object
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	// Complie the Fragment Shader init machine code
-	glCompileShader(fragmentShader);
+	// Generates Vertex Array Object and binds it
+	VAO VAO1;
+	VAO1.Bind();
 
-	// Create  Shader Program Object and get its reference
-	unsigned int shaderProgram = glCreateProgram();
-	// Attach the Vertex and Fragment Shaders to the Shader Program
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	// Wrap-up/Link all the Shaders together into the Shader Program
-	glLinkProgram(shaderProgram);
+	// Generate Vertex Buffer Object and links it to vertices
+	VBO VBO1(vertices, sizeof(vertices));
+	// Generate Element Buffer Object and links it to indices
+	EBO EBO1(indices, sizeof(indices));
 
-	// Delete the now useless Vertex and Fragment Shader Objects
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-
-	// Create reference containers for the Vertex Array Object and the Vertex Buffer Object
-	unsigned int VAO;
-	unsigned int VBO;
-
-	// Generate the VAO and VBO with only 1 Object each
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-
-    // Make the VAO the current Vertex Array Object by binding it
-	glBindVertexArray(VAO);
-
-    // Bind the VBO specifying its a GL_ARRAY_BUFFER
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    // Introduce the vertices into the VBO
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // Configure the Vertex Attribute so the OpenGL knows how to read the VBO
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    // Enable the Vertex Attribute so the OpenGL knows to use it
-	glEnableVertexAttribArray(0);
-
-    // Bind both the VAO and VBO to 0 so that we dont accidentally modify the VAO and VBO we created
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
-	// Set color of the background
-	glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
-	// Clean the back buffer and assign the new color
-	glClear(GL_COLOR_BUFFER_BIT);
-	// Swap the back buffer with the front buffer
-	glfwSwapBuffers(window);
+	// Link VBO to VAO
+	VAO1.LinkVBO(VBO1, 0);
+	// Unbind all to prevent accidentally modifying them
+	VAO1.Unbind();
+	VBO1.Unbind();
+	EBO1.Unbind();
 
 	// Main while loop
 	while(!glfwWindowShouldClose(window))
 	{
-
+		// Specify the color of the background
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+		// Clean the back buffer and assign the new color to it
 		glClear(GL_COLOR_BUFFER_BIT);
-        // Tell OpenGL which Shader Program we want to use
-		glUseProgram(shaderProgram);
-        // Bind the VAO so OpenGL knows to use it
-		glBindVertexArray(VAO);
-        // Draw the triangle using the GL_TRIANGLES primitive
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-
+		// Tell OpenGL which Shader Program we want to use
+		shaderProgram.Activate();
+		// Bind the VAO so OpenGL knows to use it
+		VAO1.Bind();
+		// Draw primitives, number of indices, datatype of indices, index of indices
+		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
+		// Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
-
 		// Take care of all GLFW events
 		glfwPollEvents();
 	}
 
-    // Delete all the Objects we created
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
-	glDeleteProgram(shaderProgram);
+	// Delete all the Objects we created
+	VAO1.Delete();
+	VBO1.Delete();
+	EBO1.Delete();
+	shaderProgram.Delete();
 
 	// Delete window before closing the program
 	glfwDestroyWindow(window);
