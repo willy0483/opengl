@@ -10,12 +10,14 @@
 
 // Vertices coordinates
 float vertices[] = {
-	-0.5f,	   -0.5f * float(sqrt(3)) / 3,	  0.0f, // lower left
-	0.5f,	   -0.5f * float(sqrt(3)) / 3,	  0.0f, // lower right
-	0.0f,	   0.5f * float(sqrt(3)) * 2 / 3, 0.0f, // upper
-	-0.5f / 2, 0.5f * float(sqrt(3)) / 6,	  0.0f, // inner left
-	0.5f / 2,  0.5f * float(sqrt(3)) / 6,	  0.0f, // inner right
-	0.0f,	   -0.5f * float(sqrt(3)) / 3,	  0.0f, // inner down
+
+	//              Coordinates                       Colors
+	-0.5f,	   -0.5f * float(sqrt(3)) / 3,	  0.0f, 0.8f, 0.3f,	 0.02f, // lower left
+	0.5f,	   -0.5f * float(sqrt(3)) / 3,	  0.0f, 0.8f, 0.3f,	 0.02f, // lower right
+	0.0f,	   0.5f * float(sqrt(3)) * 2 / 3, 0.0f, 1.0f, 0.6f,	 0.32f, // upper
+	-0.5f / 2, 0.5f * float(sqrt(3)) / 6,	  0.0f, 0.9f, 0.45f, 0.17f, // inner left
+	0.5f / 2,  0.5f * float(sqrt(3)) / 6,	  0.0f, 0.9f, 0.45f, 0.17f, // inner right
+	0.0f,	   -0.5f * float(sqrt(3)) / 3,	  0.0f, 0.8f, 0.3f,	 0.02f, // inner down
 };
 
 unsigned int indices[] = {
@@ -66,12 +68,17 @@ int main()
 	// Generate Element Buffer Object and links it to indices
 	EBO EBO1(indices, sizeof(indices));
 
-	// Link VBO to VAO
-	VAO1.LinkVBO(VBO1, 0);
+	// Link VBO attributes sch as coordinates and colors to VAO
+	VAO1.LinkAttrib(VBO1, 0, 3, GL_FLOAT, 6 * sizeof(float), (void*)0);
+	VAO1.LinkAttrib(VBO1, 1, 3, GL_FLOAT, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+
 	// Unbind all to prevent accidentally modifying them
 	VAO1.Unbind();
 	VBO1.Unbind();
 	EBO1.Unbind();
+
+	// Get ID if the uniform celled "scale"
+	GLuint uniID = glGetUniformLocation(shaderProgram.ID, "scale");
 
 	// Main while loop
 	while(!glfwWindowShouldClose(window))
@@ -82,6 +89,10 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT);
 		// Tell OpenGL which Shader Program we want to use
 		shaderProgram.Activate();
+
+		// Assign a valye to the uniform; NOTE: must be done after program activate
+		glUniform1f(uniID, 0.5f);
+
 		// Bind the VAO so OpenGL knows to use it
 		VAO1.Bind();
 		// Draw primitives, number of indices, datatype of indices, index of indices
