@@ -20,7 +20,7 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	// GLFW window creatio
+	// GLFW window creation
 	GLFWwindow* window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
 	if(window == NULL)
 	{
@@ -92,18 +92,23 @@ int main()
 
 	int width;
 	int height;
-	unsigned int texture;
+	unsigned int texture1;
+	unsigned int texture2;
 	// number of color channels
 	int nrChannels;
 
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
+	// texture 1
+	glGenTextures(1, &texture1);
+	glBindTexture(GL_TEXTURE_2D, texture1);
 
+	// set the texture wrapping parameters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	// set texture filtering parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+    stbi_set_flip_vertically_on_load(true);
 	// load image
 	unsigned char* data = stbi_load("assets/container.jpg", &width, &height, &nrChannels, 0);
 
@@ -117,10 +122,29 @@ int main()
 		std::cout << "Failed to load texture" << std::endl;
 	}
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-	glGenerateMipmap(GL_TEXTURE_2D);
+	stbi_image_free(data);
+
+	// texture 2
+	glGenTextures(1, &texture2);
+	glBindTexture(GL_TEXTURE_2D, texture2);
+
+	data = stbi_load("assets/awesomeface.png", &width, &height, &nrChannels, 0);
+
+	if(data)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+	}
 
 	stbi_image_free(data);
+
+	shader.use();
+	glUniform1i(glGetUniformLocation(shader.ID, "Texture1"), 0);
+	glUniform1i(glGetUniformLocation(shader.ID, "Texture2"), 1);
 
 	while(!glfwWindowShouldClose(window))
 	{
@@ -133,11 +157,13 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// bind Texture
-		glBindTexture(GL_TEXTURE_2D, texture);
-
-		shader.use();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texture2);
 
 		// render
+        shader.use();
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
